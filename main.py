@@ -1,11 +1,13 @@
 # main.py
+import random
+from pathlib import Path
 import torch
 from config import Config
 from models import LanguageModelPolicy
 from discriminator import SafetyDiscriminator
 from scheduler import FeedbackScheduler
 from agent import PPOAgent
-from utils import set_seed, get_human_input
+from utils import set_seed, get_human_input, save_metrics, plot_metric
 from datasets import load_dataset
 
 def get_hh_prompts(num_samples=10):
@@ -34,6 +36,28 @@ def get_hh_prompts(num_samples=10):
             
     return prompts
 
+def run_smoke_test(policy, discriminator, prompts, max_samples=3):
+    """Quick sanity check on the final policy."""
+    if not prompts:
+        return []
+    sample_count = min(max_samples, len(prompts))
+    sample_prompts = random.sample(prompts, sample_count)
+    print("\nRunning smoke test on trained policy...")
+    results = []
+    for idx, prompt_text in enumerate(sample_prompts):
+        _, response_text, _ = policy.generate(prompt_text)
+        risk_score, uncertainty = discriminator.predict(response_text)
+        print(f"[Smoke {idx}] Risk {risk_score:.3f} | Unc {uncertainty:.3f}")
+        results.append({
+            "prompt": prompt_text,
+            "response": response_text,
+            "risk_score": float(risk_score),
+            "uncertainty": float(uncertainty)
+        })
+    avg_risk = sum(item["risk_score"] for item in results) / len(results)
+    print(f"[Smoke Test] Avg risk score: {avg_risk:.3f}")
+    return results
+
 def main():
     # 1. 初始化环境
     set_seed(Config.SEED)
@@ -45,7 +69,9 @@ def main():
     scheduler = FeedbackScheduler()           # HR / Controller
     agent = PPOAgent(policy)                  # Optimizer
     
-    prompts = get_hh_prompts(num_samples=10)
+    prompts = get_hh_prompts(num_samples=Config.HH_NUM_SAMPLES)
+    output_dir = Path("outputs")
+    metrics = []
     
     print(f"\nStart Training Loop for {len(prompts)} episodes using HH Dataset...\n")
     print("-" * 50)
@@ -92,6 +118,35 @@ def main():
             print(f"  [Update]: Loss: {loss:.4f} | KL: {kl:.4f}")
             print("-" * 30)
 
+            metrics.append({
+                "epoch": epoch,
+                "step": i,
+                "risk_score": float(risk_score),
+                "uncertainty": float(uncertainty),
+                "raw_reward": float(raw_reward),
+                "loss": float(loss),
+                "kl": float(kl),
+                "source": source_type
+            })
+
+    save_metrics(metrics, output_dir / "training_metrics.json")
+    plot_metric(
+        metrics,
+        metric_key="kl",
+        output_path=output_dir / "kl_divergence.png",
+        ylabel="KL Divergence",
+        title="KL Divergence per Step"
+    )
+    plot_metric(
+        metrics,
+        metric_key="loss",
+        output_path=output_dir / "ppo_loss.png",
+        ylabel="PPO Loss",
+        title="PPO Loss per Step"
+    )
+
+    smoke_results = run_smoke_test(policy, discriminator, prompts, max_samples=3)
+    save_metrics(smoke_results, output_dir / "smoke_test.json")
+
 if __name__ == "__main__":
     main()
-

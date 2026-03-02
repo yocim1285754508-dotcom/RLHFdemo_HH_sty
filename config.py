@@ -3,15 +3,16 @@ import torch
 
 class Config:
     # 模型配置
-    MODEL_NAME = "gpt2"  # 使用轻量级模型演示，可换成 distilgpt2 或其它
+    MODEL_NAME = "sshleifer/tiny-gpt2"  # 极小模型，适合无 GPU 的 Demo
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     SEED = 42
 
-    # 训练超参数
-    LEARNING_RATE = 1e-5
-    BATCH_SIZE = 1  # 演示用，工业级可增大
-    EPOCHS = 10     # 演示轮数
-    MAX_GEN_LEN = 50 # 生成的最大长度
+    # 训练超参数（为 8GB Mac 缩减）
+    LEARNING_RATE = 5e-6
+    BATCH_SIZE = 1   # 维持单条样本，避免显存峰值
+    EPOCHS = 2       # Demo 仅跑 2 个 epoch
+    MAX_GEN_LEN = 24 # 限制生成长度以节省显存/内存
+    HH_NUM_SAMPLES = 5 # 只取少量 prompt 作为演示
 
     # === Method 核心设计：调度器阈值 ===
     # 风险分数范围 [0, 1]

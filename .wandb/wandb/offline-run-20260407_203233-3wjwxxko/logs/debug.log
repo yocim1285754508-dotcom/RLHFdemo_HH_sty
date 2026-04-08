@@ -1,0 +1,9 @@
+2026-04-07 20:32:33,467 INFO    MainThread:4456 [wandb_setup.py:_flush():81] Current SDK version is 0.25.1
+2026-04-07 20:32:33,467 INFO    MainThread:4456 [wandb_setup.py:_flush():81] Configure stats pid to 4456
+2026-04-07 20:32:33,467 INFO    MainThread:4456 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-04-07 20:32:33,467 INFO    MainThread:4456 [wandb_init.py:setup_run_log_directory():717] Logging user logs to E:\RLHFdemo_HH_sty\.wandb\wandb\offline-run-20260407_203233-3wjwxxko\logs\debug.log
+2026-04-07 20:32:33,467 INFO    MainThread:4456 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to E:\RLHFdemo_HH_sty\.wandb\wandb\offline-run-20260407_203233-3wjwxxko\logs\debug-internal.log
+2026-04-07 20:32:33,468 INFO    MainThread:4456 [wandb_init.py:init():844] calling init triggers
+2026-04-07 20:32:33,468 INFO    MainThread:4456 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'model_checkpoint': 'distilbert-base-uncased', 'max_len': 256, 'batch_size': 4, 'num_epochs': 1, 'learning_rate': 2e-05, 'warmup_ratio': 0.1, 'num_risk_labels': 19, 'max_train_samples': 50, 'max_eval_samples': 20, '_wandb': {}}
+2026-04-07 20:32:33,468 INFO    MainThread:4456 [wandb_init.py:init():892] starting backend

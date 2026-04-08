@@ -2,8 +2,10 @@ from config import Config
 
 
 class FeedbackScheduler:
-    def __init__(self):
-        self.human_budget = Config.HUMAN_BUGET
+    def __init__(self, total_steps: int):
+        self.total_steps = max(int(total_steps), 1)
+        self.human_budget_percent = Config.HUMAN_BUDGET_PERCENT
+        self.human_budget = max(1, int(round(self.total_steps * self.human_budget_percent)))
 
     def decide(self, risk_score, uncertainty):
         """

@@ -3,3 +3,5 @@ transformers>=4.5.0
 numpy
 datasets
 scikit-learn
+wandb
+weave

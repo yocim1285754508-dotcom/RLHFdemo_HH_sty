@@ -1,0 +1,8 @@
+.hf_home/
+.pku_saferlhf/
+*.jsonl
+*.arrow
+*.safetensors
+config.py
+__pycache__/
+*.pyc

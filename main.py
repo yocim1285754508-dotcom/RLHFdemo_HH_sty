@@ -9,6 +9,7 @@ from evaluation import evaluate_and_log
 from models import LanguageModelPolicy
 from openai_evaluator import OpenAIHumanReviewer, OpenAISafetyEvaluator
 from scheduler import FeedbackScheduler
+from tqdm.auto import tqdm
 from utils import get_human_input, set_seed
 from wandb_logger import WandbLogger
 from weave_support import init_weave
@@ -163,6 +164,7 @@ def main():
     eval_prompts = []
     eval_references = []
     eval_responses = []
+    progress_bar = tqdm(total=total_steps, desc="Training", dynamic_ncols=True)
     for epoch in range(Config.EPOCHS):
         for i, prompt_item in enumerate(prompts):
             prompt_source = prompt_item["source"]
@@ -215,24 +217,19 @@ def main():
             raw_reward = scheduler.get_reward_source(source_type, ai_risk_score, human_label)
             loss, kl = agent.update(inputs_ids, response_ids, raw_reward)
 
-            print(f"Epoch {epoch} | Step {i} | Source: {prompt_source}")
-            print(f"  Prompt: {prompt_text}")
-            print(f"  Response: {response_text}")
             print(
-                "  [Local Risk]: "
-                f"{local_risk_score:.2f} | Predicted Class: {discriminator.label_name(predicted_cls)} "
-                f"| Uncertainty: {uncertainty:.2f}"
+                f"Epoch {epoch} | Step {i} | Source: {prompt_source} | "
+                f"Risk: {local_risk_score:.2f} | U: {uncertainty:.2f} | "
+                f"Reward: {raw_reward:.2f} | Loss: {loss:.4f}"
             )
-            print(f"  [Top Risks]: {top_risks}")
-            print(f"  [AI Eval Risk]: {ai_risk_score:.2f}")
-            if ai_reasoning is not None:
-                print(f"  [AI Eval Reasoning]: {ai_reasoning}")
-            if human_reasoning is not None:
-                print(f"  [Human Review]: label={human_label}, risk={human_risk_score:.2f}")
-                print(f"  [Human Reasoning]: {human_reasoning}")
-            print(f"  [Control]: {source_type} -> Raw Reward: {raw_reward:.2f}")
-            print(f"  [Update]: Loss: {loss:.4f} | KL: {kl:.4f}")
             print("-" * 30)
+            progress_bar.update(1)
+            progress_bar.set_postfix(
+                risk=f"{local_risk_score:.2f}",
+                u=f"{uncertainty:.2f}",
+                reward=f"{raw_reward:.2f}",
+                loss=f"{loss:.4f}",
+            )
 
             if epoch == Config.EPOCHS - 1:
                 eval_prompts.append(prompt_text)
@@ -263,6 +260,7 @@ def main():
             "summary/total_steps": total_steps,
         }
     )
+    progress_bar.close()
 
     print("\nRunning final evaluation...")
     final_metrics = evaluate_and_log(

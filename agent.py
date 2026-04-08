@@ -9,8 +9,9 @@ class PPOAgent:
     def __init__(self, policy_container):
         self.policy = policy_container.model
         self.ref_model = policy_container.ref_model
-        hidden_size = self.policy.config.n_embd
-        self.value_head = nn.Linear(hidden_size, 1).to(Config.DEVICE)
+        hidden_size = self._resolve_hidden_size(self.policy.config)
+        policy_dtype = next(self.policy.parameters()).dtype
+        self.value_head = nn.Linear(hidden_size, 1).to(device=Config.DEVICE, dtype=policy_dtype)
         self.optimizer = torch.optim.AdamW(
             list(self.policy.parameters()) + list(self.value_head.parameters()),
             lr=Config.LEARNING_RATE,
@@ -19,6 +20,16 @@ class PPOAgent:
         self.clip_ratio = 0.2
         self.ppo_epochs = 4
         self.mini_batch_size = 1
+
+    def _resolve_hidden_size(self, config):
+        for attr_name in ("hidden_size", "n_embd", "d_model"):
+            value = getattr(config, attr_name, None)
+            if isinstance(value, int) and value > 0:
+                return value
+        raise AttributeError(
+            "Could not determine transformer hidden size from config. "
+            "Expected one of: hidden_size, n_embd, d_model."
+        )
 
     def get_policy_outputs(self, model, input_seq, response_ids_len):
         """
@@ -39,6 +50,7 @@ class PPOAgent:
         """
         Predict scalar values for each generated token.
         """
+        hidden_states = hidden_states.to(self.value_head.weight.dtype)
         return self.value_head(hidden_states).squeeze(-1)
 
     def build_shaped_rewards(self, kl_div, raw_reward):

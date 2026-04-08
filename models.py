@@ -37,7 +37,9 @@ class LanguageModelPolicy:
                 **inputs, 
                 max_new_tokens=Config.MAX_GEN_LEN,
                 do_sample=True,
+                temperature=0.7,
                 top_p=0.9,
+                repetition_penalty=1.1,
                 pad_token_id=self.tokenizer.eos_token_id
             )
         response_ids = outputs[0][inputs.input_ids.shape[-1]:]
